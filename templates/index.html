@@ -1,0 +1,60 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Screen Recorder</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <meta name="description" content="Quick and easy way to record professional videos and share them instantly.">
+</head>
+<body>
+    <div class="container">
+        <h1>Record your Screen for Free</h1>
+        <h3>Quick and easy way to record professional videos and share them instantly.</h3>
+        
+        <div class="buttons-container">
+            <button id="startBtn" onclick="startRecording()">
+                <img src="/static/icons/start.png" alt="Start Recording" />
+                <p class="button-text">Start Recording</p>
+            </button>
+            <button id="pauseBtn" onclick="pauseRecording()" disabled>
+                <img src="/static/icons/pause.png" alt="Pause Recording" />
+                <p class="button-text">Pause Recording</p>
+            </button>
+            <button id="resumeBtn" onclick="resumeRecording()" disabled>
+                <img src="/static/icons/resume.png" alt="Resume Recording" />
+                <p class="button-text">Resume Recording</p>
+            </button>
+            <button id="stopBtn" onclick="stopRecording()" disabled>
+                <img src="/static/icons/stop.png" alt="Stop Recording" />
+                <p class="button-text">Stop Recording</p>
+            </button>
+            <button id="discardBtn" onclick="discardRecording()" disabled>
+                <img src="/static/icons/discard.png" alt="Discard Recording" />
+                <p class="button-text">Discard Recording</p>
+            </button>
+        </div>
+
+        <div id="message" class="message"></div>
+        <div id="loader" class="loader"></div>
+        <div id="timer" class="timer">00:00:00</div>
+
+        <div class="video-container">
+            <video id="videoElement" controls></video>
+            <button id="uploadBtn" onclick="uploadRecording()" disabled>
+                <img src="/static/icons/upload.png" alt="Upload Recording" />
+                <p class="button-text">Upload Recording</p>
+            </button>
+        </div>
+        
+        <footer>
+            &copy; 2025 Screen Recorder. All rights reserved.
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='scripts.js') }}"></script>
+</body>
+</html>
+
