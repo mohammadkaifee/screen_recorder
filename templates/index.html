@@ -11,8 +11,8 @@
 </head>
 <body>
     <div class="container">
-        <h1>Record your Screen for Free</h1>
-        <h3>Quick and easy way to record professional videos and share them instantly.</h3>
+        <h1>Exelcius-Task Recording Utility</h1>
+        <h3>Data captured and shared are end to end encrypted.</h3>
         
         <div class="buttons-container">
             <button id="startBtn" onclick="startRecording()">
@@ -40,6 +40,9 @@
         <div id="message" class="message"></div>
         <div id="loader" class="loader"></div>
         <div id="timer" class="timer">00:00:00</div>
+        <button id="muteBtn" onclick="toggleMute()" style="display: none;">
+            <img src="/static/icons/unmute.png" alt="Mute/Unmute" />
+        </button>
 
         <div class="video-container">
             <video id="videoElement" controls></video>
@@ -57,4 +60,3 @@
     <script src="{{ url_for('static', filename='scripts.js') }}"></script>
 </body>
 </html>
-

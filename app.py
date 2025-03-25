@@ -22,9 +22,8 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
-# Configuration
 UPLOAD_FOLDER = os.path.join(os.getcwd(), 'myRecordings')
-MAX_CONTENT_LENGTH = 300 * 1024 * 1024  # 300 MB limit for uploads
+MAX_CONTENT_LENGTH = 300 * 1024 * 1024  # 300 MB limit
 ALLOWED_EXTENSIONS = {'webm', 'mp4'}
 
 if not os.path.exists(UPLOAD_FOLDER):
@@ -34,19 +33,25 @@ if not os.path.exists(UPLOAD_FOLDER):
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
 
+
 def allowed_file(filename):
+    """Check if the file extension is allowed."""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 
 @app.route('/static/<path:path>')
 def send_static(path):
+    """Serve static files."""
     try:
         return send_from_directory('static', path)
     except Exception as e:
         logger.error(f"Error serving static file {path}: {str(e)}")
         return jsonify({'error': 'Static file not found'}), 404
 
+
 @app.route('/')
 def index():
+    """Render the main page."""
     try:
         return render_template('index.html')
     except Exception as e:
@@ -56,7 +61,9 @@ def index():
 
 @app.route('/start')
 def start_recording():
+    """Start a new recording session."""
     try:
+        # Clear any existing recordings
         if os.path.exists(UPLOAD_FOLDER):
             for f in glob.glob(os.path.join(UPLOAD_FOLDER, "*")):
                 with suppress(Exception):
@@ -71,6 +78,7 @@ def start_recording():
 
 @app.route('/pause')
 def pause_recording():
+    """Pause the ongoing recording."""
     try:
         return jsonify({'message': 'Recording paused successfully'}), 200
     except Exception as e:
@@ -80,6 +88,7 @@ def pause_recording():
 
 @app.route('/resume')
 def resume_recording():
+    """Resume the paused recording."""
     try:
         return jsonify({'message': 'Recording resumed successfully'}), 200
     except Exception as e:
@@ -89,6 +98,7 @@ def resume_recording():
 
 @app.route('/stop', methods=['GET', 'POST'])
 def stop_recording():
+    """Stop the current recording."""
     try:
         return jsonify({'message': 'Video stopped successfully'}), 200
     except Exception as e:
@@ -98,6 +108,7 @@ def stop_recording():
 
 @app.route('/discard')
 def discard_recording():
+    """Discard the current recording."""
     try:
         return jsonify({'message': 'Video recording discarded successfully'}), 200
     except Exception as e:
@@ -107,23 +118,21 @@ def discard_recording():
 
 @app.route('/save', methods=['GET', 'POST'])
 def upload_video():
+    """Save the recorded video."""
     try:
         if request.method != 'POST':
             return jsonify({'error': 'Only POST method is allowed'}), 405
         
-        # Check if a file was sent in the request
         if 'file' not in request.files:
             logger.warning("No file part in the request")
             return jsonify({'error': 'No file part in the request'}), 400
         
         video_file = request.files['file']
         
-        # Check if file was selected
         if video_file.filename == '':
             logger.warning("No file selected")
             return jsonify({'error': 'No file selected'}), 400
         
-        # Save the file
         if video_file:
             try:
                 file_name = f"{uuid.uuid4()}.webm"
@@ -149,6 +158,7 @@ def upload_video():
 
 @app.route('/videos/<path:filename>')
 def get_video(filename):
+    """Retrieve a saved video."""
     try:
         return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
     except Exception as e:
@@ -158,13 +168,17 @@ def get_video(filename):
 
 @app.errorhandler(404)
 def page_not_found(e):
+    """Handle 404 errors."""
     return jsonify({'error': 'Page not found'}), 404
 
 
 @app.errorhandler(500)
 def server_error(e):
+    """Handle 500 errors."""
     return jsonify({'error': 'Internal server error'}), 500
 
-if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0')
 
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 3000))
+    logger.info(f"Starting server on port {port}")
+    app.run(debug=True, host='0.0.0.0', port=port)

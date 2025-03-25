@@ -4,26 +4,38 @@ let mediaRecorder;
 let recordedChunks = [];
 let videoElement = document.getElementById('videoElement');
 let stream;
+let audioStream;
 let timerInterval;
 let startTime;
 let pausedTime = 0;
 let isPaused = false;
 let messageTimeout;
 
-// Initialize UI elements
 const messageElement = document.getElementById('message');
 const loaderElement = document.getElementById('loader');
 const timerElement = document.getElementById('timer');
 
-// Button elements
+
 const startBtn = document.getElementById('startBtn');
 const pauseBtn = document.getElementById('pauseBtn');
 const resumeBtn = document.getElementById('resumeBtn');
 const stopBtn = document.getElementById('stopBtn');
 const discardBtn = document.getElementById('discardBtn');
 const uploadBtn = document.getElementById('uploadBtn');
+const muteBtn = document.getElementById('muteBtn');
+let isMuted = false;
 
-// Show message with status
+function toggleMute() {
+    if (stream) {
+        isMuted = !isMuted;
+        stream.getAudioTracks().forEach(track => {
+            track.enabled = !isMuted;
+        });
+        muteBtn.querySelector('img').src = isMuted ? '/static/icons/mute.png' : '/static/icons/unmute.png';
+    }
+}
+
+
 function showMessage(text, type = 'info') {
     if (messageTimeout) {
         clearTimeout(messageTimeout);
@@ -93,7 +105,7 @@ function updateButtonState(action) {
             resumeBtn.disabled = true;
             break;
         case 'stop':
-            startBtn.disabled = true;
+            startBtn.disabled = false;
             pauseBtn.disabled = true;
             resumeBtn.disabled = true;
             stopBtn.disabled = true;
@@ -109,12 +121,6 @@ function updateButtonState(action) {
             uploadBtn.disabled = true;
             break;
         case 'upload':
-            startBtn.disabled = false;
-            pauseBtn.disabled = true;
-            resumeBtn.disabled = true;
-            stopBtn.disabled = true;
-            discardBtn.disabled = true;
-            uploadBtn.disabled = true;
             break;
     }
 }
@@ -145,7 +151,14 @@ async function startRecording() {
             },
             audio: true 
         });
-        
+    
+        audioStream = await navigator.mediaDevices.getUserMedia({ 
+            audio: true 
+        });
+
+        const tracks = [...stream.getTracks(), ...audioStream.getTracks()];
+        stream = new MediaStream(tracks);
+
         mediaRecorder = new MediaRecorder(stream, {
             mimeType: 'video/webm;codecs=vp9,opus'
         });
@@ -166,10 +179,12 @@ async function startRecording() {
         mediaRecorder.start(1000);
         startTimer();
         updateButtonState('start');
+        muteBtn.style.display = 'inline-block';
         showMessage('Recording started successfully', 'success');
         hideLoader();
     } catch (err) {
         console.error('Error starting recording:', err);
+        
         if (err.name === 'NotAllowedError') {
             showMessage('Permission denied. Please allow screen recording.', 'error');
         } else {
@@ -188,6 +203,14 @@ function pauseRecording() {
         if (mediaRecorder && mediaRecorder.state === 'recording') {
             mediaRecorder.pause();
             pauseTimer();
+            if (stream) {
+                stream.getAudioTracks().forEach(track => {
+                    track.enabled = false;
+                });
+                isMuted = true;
+                muteBtn.disabled = true;
+                muteBtn.querySelector('img').src = '/static/icons/mute.png';
+            }
             
             fetch('/pause')
                 .then(response => {
@@ -220,6 +243,14 @@ function resumeRecording() {
         if (mediaRecorder && mediaRecorder.state === 'paused') {
             mediaRecorder.resume();
             resumeTimer();
+            if (stream) {
+                stream.getAudioTracks().forEach(track => {
+                    track.enabled = true;
+                });
+                isMuted = false;
+                muteBtn.disabled = false;
+                muteBtn.querySelector('img').src = '/static/icons/unmute.png';
+            }
             
             fetch('/resume')
                 .then(response => {
@@ -253,9 +284,13 @@ function stopRecording() {
         if (mediaRecorder && (mediaRecorder.state === 'recording' || mediaRecorder.state === 'paused')) {
             mediaRecorder.stop();
             stopTimer();
+            muteBtn.style.display = 'none';
             
             if (stream) {
                 stream.getTracks().forEach(track => track.stop());
+            }
+            if (audioStream) {
+                audioStream.getTracks().forEach(track => track.stop());
             }
             
             fetch('/stop', {
@@ -295,6 +330,7 @@ function discardRecording() {
         
         recordedChunks = [];
         videoElement.src = '';
+        muteBtn.style.display = 'none';
         
         if (mediaRecorder) {
             mediaRecorder = null;
@@ -355,11 +391,6 @@ function uploadRecording() {
             updateButtonState('upload');
             showMessage('Recording uploaded successfully', 'success');
             hideLoader();
-            recordedChunks = [];
-            videoElement.src = '';
-            if (mediaRecorder) {
-                mediaRecorder = null;
-            }
         })
         .catch(error => {
             console.error('Error uploading recording:', error);
@@ -376,9 +407,8 @@ function uploadRecording() {
 window.addEventListener('beforeunload', (event) => {
     if (mediaRecorder && mediaRecorder.state === 'recording') {
         event.preventDefault();
-        event.stopPropagation();
-        event.message = 'You have an active recording. Are you sure you want to leave?';
-        return event.message;
+        event.returnValue = 'You have an active recording. Are you sure you want to leave?';
+        return event.returnValue;
     }
 });
 
